@@ -1,6 +1,6 @@
 [submodule "extensions"]
 	path = extensions
-	url = https://github.com/TurboWarp/extensions
+	url = https://github.com/Mixality/sidekick-extensions
 [submodule "docs/screenshots"]
 	path = docs/screenshots
 	url = https://github.com/TurboWarp/desktop-screenshots
