@@ -51,7 +51,7 @@ const handleClickAbout = () => {
 };
 
 const handleClickSourceCode = () => {
-  window.open('https://github.com/TurboWarp');
+  window.open('https://github.com/Mixality/sidekick-desktop');
 };
 
 const handleClickDonate = () => {

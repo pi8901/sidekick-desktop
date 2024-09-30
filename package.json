@@ -1,10 +1,10 @@
 {
-  "name": "turbowarp-desktop",
+  "name": "sidekick-desktop",
   "description": "Scratch mod with a compiler, dark mode, a bunch of addons, and more.",
   "version": "1.12.3",
   "license": "GPL-3.0",
   "author": {
-    "email": "contact@turbowarp.org",
+    "email": "sidekick@mixality.de",
     "name": "Thomas Weber"
   },
   "scripts": {
@@ -48,19 +48,19 @@
       "terser-webpack-plugin": "^4.2.3"
     }
   },
-  "homepage": "https://desktop.turbowarp.org/",
+  "homepage": "https://github.com/Mixality/sidekick-desktop/releases",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TurboWarp/desktop.git"
+    "url": "https://github.com/Mixality/sidekick-desktop.git"
   },
   "bugs": {
-    "url": "https://github.com/TurboWarp/desktop/issues",
-    "email": "contact@turbowarp.org"
+    "url": "https://github.com/Mixality/sidekick-desktop/issues",
+    "email": "sidekick@mixality.de"
   },
   "main": "./src-main/entrypoint.js",
   "build": {
-    "appId": "org.turbowarp.desktop",
-    "productName": "TurboWarp",
+    "appId": "de.mixality.sidekick-desktop",
+    "productName": "SIDEKICK",
     "files": [
       "node_modules/**/*",
       "src-main/**/*",
@@ -78,6 +78,10 @@
       {
         "from": "art/icon.svg",
         "to": "icon.svg"
+      },
+      {
+        "from": "src-main/static/gpiolib.node",
+        "to": "static/gpiolib.node"
       }
     ],
     "win": {
@@ -96,9 +100,9 @@
     },
     "appx": {
       "artifactName": "${productName} MS Store ${version} ${arch}.${ext}",
-      "applicationId": "TurboWarp",
-      "displayName": "TurboWarp",
-      "identityName": "45747ThomasWeber.TurboWarpDesktop",
+      "applicationId": "SIDEKICK",
+      "displayName": "SIDEKICK",
+      "identityName": "45747ThomasWeber.SIDEKICKDesktop",
       "publisher": "CN=18FA7D4F-01BF-49F2-BF56-782DCEA49C69",
       "publisherDisplayName": "Thomas Weber",
       "backgroundColor": "#4c97ff",
@@ -152,11 +156,11 @@
     "linux": {
       "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
       "icon": "./build/",
-      "synopsis": "Mod of Scratch with a compiler and more features.",
-      "description": "TurboWarp is a Scratch mod with a compiler to run projects faster, dark mode for your eyes, a bunch of addons to improve the editor, and more.",
+      "synopsis": "Modification of TurboWarp, a mod of Scratch with a compiler and more features.",
+      "description": "SIDEKICK is a TurboWarp modification, a Scratch mod with a compiler to run projects faster, dark mode for your eyes, a bunch of addons to improve the editor, and more.",
       "category": "Development",
       "desktop": {
-        "StartupWMClass": "turbowarp-desktop",
+        "StartupWMClass": "sidekick-desktop",
         "Keywords": "scratch;"
       },
       "extraFiles": [

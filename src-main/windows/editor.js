@@ -1,21 +1,23 @@
 const fsPromises = require('fs/promises');
 const path = require('path');
 const nodeURL = require('url');
-const {app, dialog} = require('electron');
+const { app, dialog } = require('electron');
 const ProjectRunningWindow = require('./project-running-window');
 const AddonsWindow = require('./addons');
 const DesktopSettingsWindow = require('./desktop-settings');
 const PrivacyWindow = require('./privacy');
 const AboutWindow = require('./about');
 const PackagerWindow = require('./packager');
-const {createAtomicWriteStream} = require('../atomic-write-stream');
-const {translate, updateLocale, getStrings} = require('../l10n');
-const {APP_NAME} = require('../brand');
+const { createAtomicWriteStream } = require('../atomic-write-stream');
+const { translate, updateLocale, getStrings } = require('../l10n');
+const { APP_NAME } = require('../brand');
 const prompts = require('../prompts');
 const settings = require('../settings');
 const privilegedFetch = require('../fetch');
 const RichPresence = require('../rich-presence.js');
 const FileAccessWindow = require('./file-access-window.js');
+
+const { spawn, spawnSync, exec, execFile } = require('child_process');
 
 const TYPE_FILE = 'file';
 const TYPE_URL = 'url';
@@ -23,7 +25,7 @@ const TYPE_SCRATCH = 'scratch';
 const TYPE_SAMPLE = 'sample';
 
 class OpenedFile {
-  constructor (type, path) {
+  constructor(type, path) {
     /** @type {TYPE_FILE|TYPE_URL|TYPE_SCRATCH|TYPE_SAMPLE} */
     this.type = type;
 
@@ -34,7 +36,7 @@ class OpenedFile {
     this.path = path;
   }
 
-  async read () {
+  async read() {
     if (this.type === TYPE_FILE) {
       return {
         name: path.basename(this.path),
@@ -191,7 +193,7 @@ class EditorWindow extends ProjectRunningWindow {
    * @param {OpenedFile|null} file
    * @param {boolean} isInitiallyFullscreen
    */
-  constructor (file, isInitiallyFullscreen) {
+  constructor(file, isInitiallyFullscreen) {
     super();
 
     // This file ID system is not quite perfect. Ideally we would completely revoke permission to access
@@ -270,7 +272,7 @@ class EditorWindow extends ProjectRunningWindow {
 
     ipc.handle('get-file', async (event, index) => {
       const file = getFileByIndex(index);
-      const {name, data} = await file.read();
+      const { name, data } = await file.read();
       return {
         name,
         type: file.type,
@@ -368,7 +370,7 @@ class EditorWindow extends ProjectRunningWindow {
             .replace('{APP_NAME}', unsafePath.app)
             .replace('{file}', file),
           noLink: true
-        });  
+        });
         return null;
       }
 
@@ -470,6 +472,94 @@ class EditorWindow extends ProjectRunningWindow {
       event.returnValue = prompts.confirm(this.window, message);
     });
 
+    ipc.on("gpio-set", (event, gpioPin, drive) => {
+      if (process.platform === "linux") {
+        const gpio = require(process.resourcesPath + "/static/gpiolib.node");
+
+        //
+        event.returnValue = gpio.set(gpioPin, drive);
+        // gpio.set(gpioPin, drive);
+        // event.returnValue = 1;
+        //
+      } else {
+        event.returnValue = -1;
+      }
+    });
+
+    ipc.on("gpio-get", (event, gpioPin) => {
+      if (process.platform === "linux") {
+        const gpio = require(process.resourcesPath + "/static/gpiolib.node");
+        event.returnValue = gpio.get(gpioPin, -1, -1);
+      } else {
+        event.returnValue = -1;
+      }
+    });
+
+    ipc.on("gpio-pull", (event, gpioPin, pullOp) => {
+      if (process.platform === "linux") {
+        const gpio = require(process.resourcesPath + "/static/gpiolib.node");
+
+        //
+        event.returnValue = gpio.pull(gpioPin, pullOp);
+        // gpio.pull(gpioPin, pullOp);
+        // event.returnValue = 1;
+        //
+      } else {
+        event.returnValue = -1;
+      }
+    });
+
+
+    ipc.on("sudo-script", (event, synchronous, sudoCall, scriptCommand, scriptName, args) => {
+
+      let scriptPath = path.join(process.resourcesPath, "scripts", scriptName);
+      let scriptArgs = [scriptPath].concat(args);
+
+      if (sudoCall === "1") {
+
+        scriptArgs = [scriptCommand, scriptPath].concat(args);
+        scriptCommand = "sudo";
+      }
+
+      if (synchronous === "1") {
+
+        let script = spawnSync(scriptCommand, scriptArgs, { shell: process.platform == 'win32' });
+
+        if (script.error) {
+          event.returnValue = "ERROR: " + script.error;
+        }
+
+        if (script.stdout) {
+          event.returnValue = script.stdout.toString();
+        }
+        event.returnValue = "stdout: " + script.stdout + "stderr: " + script.stderr + "exist code: " + script.status;
+
+      } else {
+        let script = spawn(scriptCommand, scriptArgs, { shell: process.platform == 'win32' });
+
+        script.stdout.on('data', (data) => {
+          // console.log(data.toString());
+          event.returnValue = data.toString();
+        });
+
+        script.stderr.on('data', (data) => {
+          // console.error(`child process stderr: ${data}`);
+          event.returnValue = `child process stderr: ${data}`;
+        });
+
+        script.on('close', (code) => {
+          // console.log(`child process close all stdio with code ${code}`);
+          event.returnValue = `child process close all stdio with code ${code}`;
+        });
+
+        script.on('exit', (code) => {
+          // console.log(`child process exited with code ${code}`);
+          event.returnValue = `child process exited with code ${code}`;
+        });
+      }
+    });
+
+
     ipc.handle('open-packager', () => {
       PackagerWindow.forEditor(this);
     });
@@ -527,26 +617,26 @@ class EditorWindow extends ProjectRunningWindow {
     this.show();
   }
 
-  getPreload () {
+  getPreload() {
     return 'editor';
   }
 
-  getDimensions () {
+  getDimensions() {
     return {
       width: 1280,
       height: 800
     };
   }
 
-  getBackgroundColor () {
+  getBackgroundColor() {
     return '#333333';
   }
 
-  applySettings () {
+  applySettings() {
     this.window.webContents.setBackgroundThrottling(settings.backgroundThrottling);
   }
 
-  enumerateMediaDevices () {
+  enumerateMediaDevices() {
     // Used by desktop settings
     return new Promise((resolve, reject) => {
       this.window.webContents.ipc.once('enumerated-media-devices', (event, result) => {
@@ -560,7 +650,7 @@ class EditorWindow extends ProjectRunningWindow {
     });
   }
 
-  handleWindowOpen (details) {
+  handleWindowOpen(details) {
     // Open extension sample projects in-app
     const match = details.url.match(
       /^tw-editor:\/\/\.\/gui\/editor\?project_url=(https:\/\/extensions\.turbowarp\.org\/samples\/.+\.sb3)$/
@@ -571,11 +661,11 @@ class EditorWindow extends ProjectRunningWindow {
     return super.handleWindowOpen(details);
   }
 
-  canExitFullscreenByPressingEscape () {
+  canExitFullscreenByPressingEscape() {
     return !this.isInEditorFullScreen;
   }
 
-  updateRichPresence () {
+  updateRichPresence() {
     RichPresence.setActivity(this.projectTitle, this.openedProjectAt);
   }
 
@@ -584,7 +674,7 @@ class EditorWindow extends ProjectRunningWindow {
    * @param {boolean} fullscreen
    * @param {string|null} workingDirectory
    */
-  static openFiles (files, fullscreen, workingDirectory) {
+  static openFiles(files, fullscreen, workingDirectory) {
     if (files.length === 0) {
       EditorWindow.newWindow(fullscreen);
     } else {
@@ -598,7 +688,7 @@ class EditorWindow extends ProjectRunningWindow {
    * Open a new window with the default project.
    * @param {boolean} fullscreen
    */
-  static newWindow (fullscreen) {
+  static newWindow(fullscreen) {
     new EditorWindow(null, fullscreen);
   }
 }

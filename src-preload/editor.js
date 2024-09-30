@@ -1,4 +1,4 @@
-const {contextBridge, ipcRenderer} = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('EditorPreload', {
   isInitiallyFullscreen: () => ipcRenderer.sendSync('is-initially-fullscreen'),
@@ -21,7 +21,14 @@ contextBridge.exposeInMainWorld('EditorPreload', {
   setExportForPackager: (callback) => {
     exportForPackager = callback;
   },
-  setIsFullScreen: (isFullScreen) => ipcRenderer.invoke('set-is-full-screen', isFullScreen)
+  setIsFullScreen: (isFullScreen) => ipcRenderer.invoke('set-is-full-screen', isFullScreen),
+
+  gpioSet: (pin, drive) => ipcRenderer.sendSync("gpio-set", pin, drive),
+  gpioToggle: (pin) => ipcRenderer.sendSync("gpio-toggle", pin),
+  gpioGet: (pin, io, pull) => ipcRenderer.sendSync("gpio-get", pin, io, pull),
+  gpioPull: (pin, op) => ipcRenderer.sendSync("gpio-pull", pin, op),
+
+  sudoScript: (synchronous, sudoCall, command, scriptName, args) => ipcRenderer.sendSync('sudo-script', synchronous, sudoCall, command, scriptName, args)
 });
 
 let exportForPackager = () => Promise.reject(new Error('exportForPackager missing'));
@@ -29,7 +36,7 @@ let exportForPackager = () => Promise.reject(new Error('exportForPackager missin
 ipcRenderer.on('export-project-to-port', (e) => {
   const port = e.ports[0];
   exportForPackager()
-    .then(({data, name}) => {
+    .then(({ data, name }) => {
       port.postMessage({ data, name });
     })
     .catch((error) => {
@@ -78,7 +85,7 @@ if (navigator.userAgent.includes('Linux')) {
     if (e.isTrusted) {
       for (const file of e.dataTransfer.files) {
         // Using webUtils is safe as we don't have a legacy build for Linux
-        const {webUtils} = require('electron');
+        const { webUtils } = require('electron');
         const path = webUtils.getPathForFile(file);
         ipcRenderer.invoke('check-drag-and-drop-path', path);
       }
