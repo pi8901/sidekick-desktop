@@ -154,14 +154,14 @@ const getUnsafePaths = () => {
       app: APP_NAME,
     },
 
-    // TurboWarp Desktop defaults
+    // SIDEKICK Desktop defaults
     {
-      path: path.join(appData, 'turbowarp-desktop'),
-      app: 'TurboWarp Desktop'
+      path: path.join(appData, 'sidekick-desktop'),
+      app: 'SIDEKICK Desktop'
     },
     {
-      path: path.join(localPrograms, 'TurboWarp'),
-      app: 'TurboWarp Desktop'
+      path: path.join(localPrograms, 'SIDEKICK'),
+      app: 'SIDEKICK Desktop'
     },
 
     // Scratch Desktop defaults
